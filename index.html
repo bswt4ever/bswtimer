@@ -5,7 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The BSWTimer</title>
 
+<!-- HTTPS + performance optimized fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap" rel="stylesheet">
+
+<!-- Basic CSP for HTTPS safety -->
+<meta http-equiv="Content-Security-Policy"
+content="default-src 'self';
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+font-src https://fonts.gstatic.com;
+script-src 'self' 'unsafe-inline';">
 
 <style>
 :root {
@@ -154,13 +164,13 @@ h1 {
 
 <div class="timer">
 
-    <!-- ROW 1: DAYS -->
+    <!-- DAYS -->
     <div class="group">
         <div class="row" id="days"></div>
         <div class="label">DAYS</div>
     </div>
 
-    <!-- ROW 2: H M S -->
+    <!-- HMS -->
     <div class="row horizontal">
 
         <div class="group">
@@ -181,6 +191,13 @@ h1 {
     </div>
 
 </div>
+
+<!-- Optional HTTPS enforcement -->
+<script>
+if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
+}
+</script>
 
 <script>
 const startDate = new Date("May 6, 2025 00:00:00").getTime();
