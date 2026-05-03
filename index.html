@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The BSWTimer</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --w: clamp(50px, 12vw, 80px);
+    --h: calc(var(--w) * 1.3);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top, #1e3a8a, #020617);
+    color: white;
+}
+
+h1 {
+    margin-bottom: 25px;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+}
+
+/* layout */
+.timer {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center;
+}
+
+.group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.row.horizontal {
+    gap: clamp(15px, 5vw, 40px);
+}
+
+.label {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: #cbd5f5;
+}
+
+/* flip card */
+.flip {
+    position: relative;
+    width: var(--w);
+    height: var(--h);
+    perspective: 1000px;
+}
+
+/* halves */
+.top, .bottom, .flip-top, .flip-bottom {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+    overflow: hidden;
+    backface-visibility: hidden;
+}
+
+.top, .flip-top {
+    top: 0;
+    background: linear-gradient(#000, #111);
+    border-radius: 8px 8px 0 0;
+}
+
+.bottom, .flip-bottom {
+    bottom: 0;
+    background: linear-gradient(#111, #222);
+    border-radius: 0 0 8px 8px;
+}
+
+/* digit */
+.digit {
+    position: absolute;
+    width: 100%;
+    height: var(--h);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: calc(var(--w) * 0.7);
+    font-weight: bold;
+}
+
+.top .digit { transform: translateY(0); }
+.bottom .digit { transform: translateY(-50%); }
+.flip-top .digit { transform: translateY(0); }
+.flip-bottom .digit { transform: translateY(-50%); }
+
+/* hinge */
+.flip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    width: 100%;
+    background: rgba(255,255,255,0.15);
+}
+
+/* animation */
+.flip-top {
+    transform-origin: bottom;
+    z-index: 2;
+    box-shadow: inset 0 -10px 20px rgba(0,0,0,0.6);
+}
+
+.flip-bottom {
+    transform-origin: top;
+    transform: rotateX(90deg);
+    box-shadow: inset 0 10px 20px rgba(0,0,0,0.6);
+}
+
+.animate-top {
+    animation: flipTop 0.35s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+.animate-bottom {
+    animation: flipBottom 0.35s cubic-bezier(.2,.8,.2,1) forwards;
+}
+
+@keyframes flipTop {
+    to { transform: rotateX(-90deg); }
+}
+
+@keyframes flipBottom {
+    to { transform: rotateX(0deg); }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Time since 6 May 2025</h1>
+
+<div class="timer">
+
+    <!-- ROW 1: DAYS -->
+    <div class="group">
+        <div class="row" id="days"></div>
+        <div class="label">DAYS</div>
+    </div>
+
+    <!-- ROW 2: H M S -->
+    <div class="row horizontal">
+
+        <div class="group">
+            <div class="row" id="hours"></div>
+            <div class="label">HOURS</div>
+        </div>
+
+        <div class="group">
+            <div class="row" id="minutes"></div>
+            <div class="label">MINUTES</div>
+        </div>
+
+        <div class="group">
+            <div class="row" id="seconds"></div>
+            <div class="label">SECONDS</div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const startDate = new Date("May 6, 2025 00:00:00").getTime();
+
+const prev = {
+    days: [],
+    hours: [],
+    minutes: [],
+    seconds: []
+};
+
+function createDigitHTML(val) {
+    return `
+        <div class="top"><div class="digit">${val}</div></div>
+        <div class="bottom"><div class="digit">${val}</div></div>
+    `;
+}
+
+function createFlipHTML(oldVal, newVal) {
+    return `
+        <div class="top"><div class="digit">${oldVal}</div></div>
+        <div class="bottom"><div class="digit">${oldVal}</div></div>
+        <div class="flip-top"><div class="digit">${oldVal}</div></div>
+        <div class="flip-bottom"><div class="digit">${newVal}</div></div>
+    `;
+}
+
+function updateRow(id, value, pad = 2) {
+    const container = document.getElementById(id);
+    const str = String(value).padStart(pad, "0");
+    const digits = str.split("");
+
+    while (container.children.length < digits.length) {
+        const div = document.createElement("div");
+        div.className = "flip";
+        container.appendChild(div);
+    }
+
+    digits.forEach((digit, i) => {
+        const el = container.children[i];
+        const old = prev[id][i];
+
+        const delay = (digits.length - i - 1) * 60 + Math.random() * 20;
+
+        if (old === undefined) {
+            el.innerHTML = createDigitHTML(digit);
+        } else if (old !== digit) {
+            setTimeout(() => {
+                el.innerHTML = createFlipHTML(old, digit);
+
+                const topFlip = el.querySelector('.flip-top');
+                const bottom = el.querySelector('.bottom');
+                const bottomFlip = el.querySelector('.flip-bottom');
+
+                topFlip.classList.add('animate-top');
+
+                topFlip.addEventListener('animationend', () => {
+                    bottom.innerHTML = `<div class="digit">${digit}</div>`;
+                    bottomFlip.classList.add('animate-bottom');
+                    topFlip.remove();
+                }, {once:true});
+
+                bottomFlip.addEventListener('animationend', () => {
+                    el.innerHTML = createDigitHTML(digit);
+                }, {once:true});
+            }, delay);
+        }
+
+        prev[id][i] = digit;
+    });
+}
+
+function updateTimer() {
+    const now = Date.now();
+    let diff = now - startDate;
+    if (diff < 0) diff = 0;
+
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+
+    updateRow("days", d, 3);
+    updateRow("hours", h, 2);
+    updateRow("minutes", m, 2);
+    updateRow("seconds", s, 2);
+}
+
+setInterval(updateTimer, 1000);
+updateTimer();
+</script>
+
+</body>
+</html>
